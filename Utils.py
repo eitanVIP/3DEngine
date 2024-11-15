@@ -1,4 +1,5 @@
 import math
+import pywavefront
 
 
 class Rotation:
@@ -11,6 +12,32 @@ class Rotation:
         return Rotation(self.pitch + other.pitch, self.yaw + other.yaw, self.roll + other.roll)
 
 
+class Vector:
+    def __init__(self, x: float, y: float, z: float):
+        self.x = x
+        self.y = y
+        self.z = z
+
+    def dot(self, other):
+        return (self.x * other.x) + (self.y * other.y) + (self.z * other.z)
+
+    def getMagnitude(self):
+        return math.hypot(self.x, self.y, self.z)
+
+    def getNormalized(self):
+        return Vector(self.x / self.getMagnitude(), self.y / self.getMagnitude(), self.z / self.getMagnitude())
+
+    def cross(self, other):
+        return Vector(
+            self.y * other.z - self.z * other.y,
+            self.z * other.x - self.x * other.z,
+            self.x * other.y - self.y * other.x,
+        )
+
+    def reverse(self):
+        return Vector(-self.x, -self.y)
+
+
 class Point:
     def __init__(self, x: float, y: float, z: float):
         self.x = x
@@ -21,14 +48,14 @@ class Point:
         return Point(self.x + x, self.y + y, self.z + z)
 
     def rotate(self, rotation: Rotation):
-        cosa = math.cos(rotation.pitch)
-        sina = math.sin(rotation.pitch)
+        cosa = math.cos(rotation.roll)
+        sina = math.sin(rotation.roll)
 
         cosb = math.cos(rotation.yaw)
         sinb = math.sin(rotation.yaw)
 
-        cosc = math.cos(rotation.roll)
-        sinc = math.sin(rotation.roll)
+        cosc = math.cos(rotation.pitch)
+        sinc = math.sin(rotation.pitch)
 
         Axx = cosa * cosb
         Axy = cosa * sinb * sinc - sina * cosc
@@ -50,6 +77,16 @@ class Point:
 
     def toScreenSpace(self, width, height):
         return width / 2 + self.x * width, height / 2 - self.y * height
+
+    def __sub__(self, other):
+        return Vector(
+            self.x - other.x,
+            self.y - other.y,
+            self.z - other.z
+        )
+
+    def __repr__(self):
+        return f"x: {self.x}, y: {self.y}, z: {self.z}"
 
 
 class Line:
@@ -81,6 +118,14 @@ class Triangle:
             self.p3.toScreenSpace(width, height)
         ]
 
+    def getNormal(self):
+        A = self.p2 - self.p1
+        B = self.p3 - self.p1
+        return A.cross(B)
+
+    def __repr__(self):
+        return f"p1: {self.p1}, p2: {self.p2}, p3: {self.p3}"
+
 
 class Model:
     def __init__(self, triangles: list[Triangle], position: Point, rotation: Rotation):
@@ -102,3 +147,19 @@ class Model:
 
     def rotateTo(self, rotation: Rotation):
         self.rotation = rotation
+
+
+def createModelFromFile(filePath: str, position: Point, rotation: Rotation):
+    obj = pywavefront.Wavefront(filePath, collect_faces=True)
+
+    triangles = []
+    for face in obj.mesh_list[0].faces:
+        triangles.append(Triangle(
+            Point(obj.vertices[face[0]][0], obj.vertices[face[0]][1], obj.vertices[face[0]][2]),
+            Point(obj.vertices[face[1]][0], obj.vertices[face[1]][1], obj.vertices[face[1]][2]),
+            Point(obj.vertices[face[2]][0], obj.vertices[face[2]][1], obj.vertices[face[2]][2])
+        ))
+
+    print(triangles)
+
+    return Model(triangles, position, rotation)
