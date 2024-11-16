@@ -13,6 +13,8 @@ class Engine:
         pygame.display.set_caption(windowName)
         self.clock = pygame.time.Clock()
         self.drawLines = False
+        pygame.event.set_grab(True)
+        pygame.mouse.set_visible(False)
 
         self.models = []
         self.fov = fov
@@ -45,16 +47,8 @@ class Engine:
         triangles2D.sort(reverse=True, key=lambda t: (t.p1.z + t.p2.z + t.p3.z) / 3)
         self.draw(triangles2D, self.drawLines)
 
-        # Mouse look (for turning around)
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        center_x, center_y = self.width // 2, self.height // 2
-        pygame.mouse.set_pos(center_x, center_y)  # Lock the mouse to the center of the screen
-
-        # Calculate mouse movement for look
-        delta_x = mouse_x - center_x
-        delta_y = mouse_y - center_y
-
-        return pygame.key.get_pressed(), (delta_x, delta_y)
+        delta_x, delta_y = pygame.mouse.get_rel()
+        return pygame.key.get_pressed(), (float(delta_x), float(delta_y))
 
     def isTriangleVisible(self, triangle: Triangle):
         return (triangle.getNormal().x * (triangle.p1.x - self.camera.position.x) +
