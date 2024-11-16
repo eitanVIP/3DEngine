@@ -35,7 +35,10 @@ class Vector:
         )
 
     def reverse(self):
-        return Vector(-self.x, -self.y)
+        return Vector(-self.x, -self.y, -self.z)
+
+    def __repr__(self):
+        return f"Vector: x{self.x}, y{self.y}, z{self.z}"
 
 
 class Point:
@@ -86,13 +89,7 @@ class Point:
         )
 
     def __repr__(self):
-        return f"x: {self.x}, y: {self.y}, z: {self.z}"
-
-
-class Line:
-    def __init__(self, p1: Point, p2: Point):
-        self.p1 = p1
-        self.p2 = p2
+        return f"Point: x{self.x}, y{self.y}, z{self.z}"
 
 
 class Triangle:
@@ -121,10 +118,10 @@ class Triangle:
     def getNormal(self):
         A = self.p2 - self.p1
         B = self.p3 - self.p1
-        return A.cross(B)
+        return A.cross(B).getNormalized()
 
     def __repr__(self):
-        return f"p1: {self.p1}, p2: {self.p2}, p3: {self.p3}"
+        return f"Triangle: p1- {self.p1}, p2- {self.p2}, p3- {self.p3}"
 
 
 class Model:
@@ -159,7 +156,5 @@ def createModelFromFile(filePath: str, position: Point, rotation: Rotation):
             Point(obj.vertices[face[1]][0], obj.vertices[face[1]][1], obj.vertices[face[1]][2]),
             Point(obj.vertices[face[2]][0], obj.vertices[face[2]][1], obj.vertices[face[2]][2])
         ))
-
-    print(triangles)
 
     return Model(triangles, position, rotation)

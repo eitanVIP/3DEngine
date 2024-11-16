@@ -12,6 +12,7 @@ class Engine:
         self.screen = pygame.display.set_mode([width, height])
         pygame.display.set_caption(windowName)
         self.clock = pygame.time.Clock()
+        self.drawLines = False
 
         self.models = []
         self.fov = fov
@@ -29,34 +30,48 @@ class Engine:
         colors = []
 
         for model in self.models:
-            for triangle in model.getTransformedTriangles():
-                if (triangle.getNormal().x * triangle.p1.x +
-                        triangle.getNormal().y * triangle.p1.y +
-                        triangle.getNormal().z * triangle.p1.z >= 0):
+            triangles = model.getTransformedTriangles()
+            triangles.sort(reverse=True, key=lambda t: (t.p1.z + t.p2.z + t.p3.z) / 3)
+
+            for triangle in triangles:
+                if not self.isTriangleVisible(triangle):
                     continue
 
-                triangles2D.append(Triangle(
+                triangles2D.append(self.projectTriangle(triangle))
+                colors.append((0, self.calculateBrightness(triangle), 0))
+
+        self.draw(triangles2D, colors, self.drawLines)
+
+    def isTriangleVisible(self, triangle: Triangle):
+        return (triangle.getNormal().x * triangle.p1.x +
+                triangle.getNormal().y * triangle.p1.y +
+                triangle.getNormal().z * triangle.p1.z < 0)
+
+    def projectTriangle(self, triangle: Triangle):
+        return Triangle(
                     Point(triangle.p1.x * self.F / triangle.p1.z, triangle.p1.y * self.F / triangle.p1.z, 0),
                     Point(triangle.p2.x * self.F / triangle.p2.z, triangle.p2.y * self.F / triangle.p2.z, 0),
                     Point(triangle.p3.x * self.F / triangle.p3.z, triangle.p3.y * self.F / triangle.p3.z, 0)
-                ))
+                )
 
-                dot = triangle.getNormal().dot(self.lightDir)
-                brightness = (-dot + 1) / 2 * 200
-                colors.append((0, brightness, 0))
+    def calculateBrightness(self, triangle: Triangle):
+        dot = triangle.getNormal().dot(self.lightDir.reverse())
+        return abs(dot) * 255
 
-        self.draw(triangles2D, colors)
-
-    def draw(self, triangles2D: list[Triangle], colors: list):
+    def draw(self, triangles2D: list[Triangle], colors: list, drawLines: bool):
         self.screen.fill((32, 28, 36))
 
         for i, triangle in enumerate(triangles2D):
             pygame.draw.polygon(self.screen, colors[i], triangle.toScreenSpace(self.width, self.height))
 
-        # for triangle in triangles2D:
-        #     pygame.draw.line(self.screen, "green", triangle.p1.toScreenSpace(self.width, self.height), triangle.p2.toScreenSpace(self.width, self.height))
-        #     pygame.draw.line(self.screen, "green", triangle.p2.toScreenSpace(self.width, self.height), triangle.p3.toScreenSpace(self.width, self.height))
-        #     pygame.draw.line(self.screen, "green", triangle.p1.toScreenSpace(self.width, self.height), triangle.p3.toScreenSpace(self.width, self.height))
+        if drawLines:
+            for triangle in triangles2D:
+                pygame.draw.line(self.screen, "red", triangle.p1.toScreenSpace(self.width, self.height),
+                                 triangle.p2.toScreenSpace(self.width, self.height))
+                pygame.draw.line(self.screen, "red", triangle.p2.toScreenSpace(self.width, self.height),
+                                 triangle.p3.toScreenSpace(self.width, self.height))
+                pygame.draw.line(self.screen, "red", triangle.p1.toScreenSpace(self.width, self.height),
+                                 triangle.p3.toScreenSpace(self.width, self.height))
 
         pygame.display.flip()
 

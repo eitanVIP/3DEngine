@@ -31,7 +31,8 @@ def main():
         Triangle(Point(0.5, -0.5, 0.5), Point(-0.5, -0.5, -0.5), Point(0.5, -0.5, -0.5)),
     ], Point(0, 0, 2), Rotation(0, 0, 0))
 
-    loadedModel = Utils.createModelFromFile(filedialog.askopenfilename(), Point(0, 0, 5), Rotation(0, 0, 0))
+    # loadedModel = Utils.createModelFromFile(filedialog.askopenfilename(), Point(0, 0, 5), Rotation(0, 0, 0))
+    loadedModel = Utils.createModelFromFile("C:\\Users\eitan\Desktop\Dragon.obj", Point(0, 0, 5), Rotation(0, 0, 0))
 
     engine = Engine(850, 850, 90, 72, "My 3D Engine")
     engine.addModel(loadedModel)
