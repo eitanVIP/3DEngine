@@ -1,4 +1,4 @@
-from Utils import Triangle, Model, Point, Vector
+from Utils import Triangle, Model, Point, Vector, Camera, Rotation
 import math
 import pygame
 
@@ -17,7 +17,8 @@ class Engine:
         self.models = []
         self.fov = fov
         self.F = 1 / math.tan(fov / 2)
-        self.lightDir = Vector(0, 0, 1).getNormalized()
+        self.lightDir = Vector(0, -1, 1).getNormalized()
+        self.camera = Camera(Point(0, 0, 0), Rotation(0, 0, 0), self.fov)
 
     def update(self):
         self.clock.tick(self.fps)
@@ -27,42 +28,56 @@ class Engine:
                 self.finish()
 
         triangles2D = []
-        colors = []
 
         for model in self.models:
-            triangles = model.getTransformedTriangles()
-            triangles.sort(reverse=True, key=lambda t: (t.p1.z + t.p2.z + t.p3.z) / 3)
-
-            for triangle in triangles:
+            for triangle in model.getTransformedTriangles():
                 if not self.isTriangleVisible(triangle):
                     continue
 
-                triangles2D.append(self.projectTriangle(triangle))
-                colors.append((0, self.calculateBrightness(triangle), 0))
+                cameraTransformedTriangle = (triangle
+                                             .move(-self.camera.position.x, -self.camera.position.y, -self.camera.position.z)
+                                             .rotate(self.camera.rotation.inverse(yaw=False)))
 
-        self.draw(triangles2D, colors, self.drawLines)
+                triangle2D = self.projectTriangle(cameraTransformedTriangle)
+                triangle2D.color = self.calculateColor(triangle)
+                triangles2D.append(triangle2D)
+
+        triangles2D.sort(reverse=True, key=lambda t: (t.p1.z + t.p2.z + t.p3.z) / 3)
+        self.draw(triangles2D, self.drawLines)
+
+        # Mouse look (for turning around)
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        center_x, center_y = self.width // 2, self.height // 2
+        pygame.mouse.set_pos(center_x, center_y)  # Lock the mouse to the center of the screen
+
+        # Calculate mouse movement for look
+        delta_x = mouse_x - center_x
+        delta_y = mouse_y - center_y
+
+        return pygame.key.get_pressed(), (delta_x, delta_y)
 
     def isTriangleVisible(self, triangle: Triangle):
-        return (triangle.getNormal().x * triangle.p1.x +
-                triangle.getNormal().y * triangle.p1.y +
-                triangle.getNormal().z * triangle.p1.z < 0)
+        return (triangle.getNormal().x * (triangle.p1.x - self.camera.position.x) +
+                triangle.getNormal().y * (triangle.p1.y - self.camera.position.y) +
+                triangle.getNormal().z * (triangle.p1.z - self.camera.position.z) < 0)
 
     def projectTriangle(self, triangle: Triangle):
         return Triangle(
-                    Point(triangle.p1.x * self.F / triangle.p1.z, triangle.p1.y * self.F / triangle.p1.z, 0),
-                    Point(triangle.p2.x * self.F / triangle.p2.z, triangle.p2.y * self.F / triangle.p2.z, 0),
-                    Point(triangle.p3.x * self.F / triangle.p3.z, triangle.p3.y * self.F / triangle.p3.z, 0)
+                    Point(triangle.p1.x * self.F / triangle.p1.z, triangle.p1.y * self.F / triangle.p1.z, triangle.p1.z),
+                    Point(triangle.p2.x * self.F / triangle.p2.z, triangle.p2.y * self.F / triangle.p2.z, triangle.p2.z),
+                    Point(triangle.p3.x * self.F / triangle.p3.z, triangle.p3.y * self.F / triangle.p3.z, triangle.p3.z),
+                    triangle.color
                 )
 
-    def calculateBrightness(self, triangle: Triangle):
+    def calculateColor(self, triangle: Triangle):
         dot = triangle.getNormal().dot(self.lightDir.reverse())
-        return abs(dot) * 255
+        return triangle.color * max(dot, 0)
 
-    def draw(self, triangles2D: list[Triangle], colors: list, drawLines: bool):
+    def draw(self, triangles2D: list[Triangle], drawLines: bool):
         self.screen.fill((32, 28, 36))
 
-        for i, triangle in enumerate(triangles2D):
-            pygame.draw.polygon(self.screen, colors[i], triangle.toScreenSpace(self.width, self.height))
+        for triangle in triangles2D:
+            pygame.draw.polygon(self.screen, triangle.color.getAsTuple(), triangle.toScreenSpace(self.width, self.height))
 
         if drawLines:
             for triangle in triangles2D:
