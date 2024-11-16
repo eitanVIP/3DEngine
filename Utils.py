@@ -54,11 +54,11 @@ class Point:
         cosa = math.cos(rotation.roll)
         sina = math.sin(rotation.roll)
 
-        cosb = math.cos(rotation.yaw)
-        sinb = math.sin(rotation.yaw)
+        cosb = math.cos(-rotation.yaw)
+        sinb = math.sin(-rotation.yaw)
 
-        cosc = math.cos(rotation.pitch)
-        sinc = math.sin(rotation.pitch)
+        cosc = math.cos(-rotation.pitch)
+        sinc = math.sin(-rotation.pitch)
 
         Axx = cosa * cosb
         Axy = cosa * sinb * sinc - sina * cosc
