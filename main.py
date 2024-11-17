@@ -38,16 +38,16 @@ def main():
 
     engine = Engine(1080, 1080, 90, 144, "My 3D Engine")
 
-    # loadedModel = Utils.createModelFromFile(filedialog.askopenfilename(), Point(0, 0, 6), Rotation(0, math.pi, 0))
-    # engine.addModel(loadedModel)
-    engine.addModel(cube)
+    loadedModel = Utils.createModelFromFile(filedialog.askopenfilename(), Point(0, 0, 6), Rotation(0, math.pi, 0))
+    engine.addModel(loadedModel)
+    # engine.addModel(cube)
     speed = 0.1
     sensitivity = 1 / 800
 
     while True:
         keys, mouse = engine.update()
 
-        cube.rotate(Rotation(0, 0.02, 0))
+        # loadedModel.rotate(Rotation(0, 0.02, 0))
 
         if keys[pygame.K_w]:
             engine.camera.move(Vector(0, 0, speed))

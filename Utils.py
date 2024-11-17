@@ -134,6 +134,11 @@ class Triangle:
         self.p2 = p2
         self.p3 = p3
         self.color = color
+        if(self.color == Color(0, 255, 0)):
+            self.color = Color.random()
+
+    def getPoints(self):
+        return [self.p1, self.p2, self.p3]
 
     def move(self, x: float, y: float, z: float):
         return Triangle(
@@ -190,10 +195,11 @@ class Model:
 
 
 class Camera:
-    def __init__(self, position: Point, rotation: Rotation, fov: float):
+    def __init__(self, position: Point, rotation: Rotation, fov: float, cullingDist: float):
         self.position = position
         self.rotation = rotation
         self.fov = fov
+        self.cullingDist = cullingDist
 
     def move(self, translation: Vector):
         translation = (self.getRight() * translation.x +
